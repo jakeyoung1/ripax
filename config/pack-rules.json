@@ -1,0 +1,266 @@
+{
+  "_readme": [
+    "Pack composition and hit-slot odds, keyed by the series field from api.pokemontcg.io.",
+    "ODDS ARE COMMUNITY-SOURCED APPROXIMATIONS, NOT OFFICIAL. The Pokemon Company has",
+    "never published pull rates. Values here come from large public pull-rate trackers",
+    "and vary meaningfully between sets inside the same era. Tune freely.",
+    "",
+    "Hit-slot weights are normalised at roll time over the rarity tiers a set actually",
+    "contains, so an era config works for every set in that era even when a set is",
+    "missing tiers (no Illustration Rares in a starter set, no Hyper Rares in a small",
+    "set, and so on).",
+    "",
+    "Slot flags: reverse = force the reverse-holo price variant. energy = prefer a basic",
+    "energy card. hit = roll the weighted rarity table. Otherwise draw from `pool`."
+  ],
+
+  "eras": {
+    "Base": {
+      "label": "Base / WotC (1999-2000)",
+      "packSize": 11,
+      "msrp": { "pack": 3.29, "box": 118.44, "boxPacks": 36 },
+      "slots": [
+        { "count": 7, "pool": ["Common"] },
+        { "count": 3, "pool": ["Uncommon"] },
+        { "count": 1, "hit": true }
+      ],
+      "hitWeights": {
+        "Rare": 0.67,
+        "Rare Holo": 0.33
+      }
+    },
+
+    "Gym": { "extends": "Base", "label": "Gym Heroes / Challenge (2000)" },
+    "Neo": { "extends": "Base", "label": "Neo (2000-2002)" },
+
+    "E-Card": {
+      "label": "e-Card (2002-2003)",
+      "packSize": 9,
+      "msrp": { "pack": 3.29, "box": 118.44, "boxPacks": 36 },
+      "slots": [
+        { "count": 5, "pool": ["Common"] },
+        { "count": 3, "pool": ["Uncommon"] },
+        { "count": 1, "hit": true }
+      ],
+      "hitWeights": {
+        "Rare": 0.64,
+        "Rare Holo": 0.33,
+        "Rare Shining": 0.03
+      }
+    },
+
+    "EX": {
+      "label": "EX (2003-2007)",
+      "packSize": 9,
+      "msrp": { "pack": 3.49, "box": 125.64, "boxPacks": 36 },
+      "slots": [
+        { "count": 4, "pool": ["Common"] },
+        { "count": 3, "pool": ["Uncommon"] },
+        { "count": 1, "reverse": true, "pool": ["Common", "Uncommon", "Rare"] },
+        { "count": 1, "hit": true }
+      ],
+      "hitWeights": {
+        "Rare": 0.6,
+        "Rare Holo": 0.28,
+        "Rare Holo EX": 0.09,
+        "Rare Holo Star": 0.02,
+        "Rare Secret": 0.01
+      }
+    },
+
+    "Diamond & Pearl": {
+      "label": "Diamond & Pearl (2007-2008)",
+      "packSize": 10,
+      "msrp": { "pack": 3.99, "box": 143.64, "boxPacks": 36 },
+      "slots": [
+        { "count": 5, "pool": ["Common"] },
+        { "count": 3, "pool": ["Uncommon"] },
+        { "count": 1, "reverse": true, "pool": ["Common", "Uncommon", "Rare"] },
+        { "count": 1, "hit": true }
+      ],
+      "hitWeights": {
+        "Rare": 0.62,
+        "Rare Holo": 0.27,
+        "Rare Holo LV.X": 0.08,
+        "Rare Secret": 0.03
+      }
+    },
+
+    "Platinum": { "extends": "Diamond & Pearl", "label": "Platinum (2009)" },
+
+    "HeartGold & SoulSilver": {
+      "label": "HeartGold & SoulSilver (2010-2011)",
+      "packSize": 10,
+      "msrp": { "pack": 3.99, "box": 143.64, "boxPacks": 36 },
+      "slots": [
+        { "count": 5, "pool": ["Common"] },
+        { "count": 3, "pool": ["Uncommon"] },
+        { "count": 1, "reverse": true, "pool": ["Common", "Uncommon", "Rare"] },
+        { "count": 1, "hit": true }
+      ],
+      "hitWeights": {
+        "Rare": 0.58,
+        "Rare Holo": 0.26,
+        "Rare Prime": 0.11,
+        "Rare BREAK": 0.03,
+        "LEGEND": 0.02
+      }
+    },
+
+    "Black & White": {
+      "label": "Black & White (2011-2013)",
+      "packSize": 10,
+      "msrp": { "pack": 3.99, "box": 143.64, "boxPacks": 36, "etb": 39.99, "etbPacks": 8 },
+      "slots": [
+        { "count": 5, "pool": ["Common"] },
+        { "count": 3, "pool": ["Uncommon"] },
+        { "count": 1, "reverse": true, "pool": ["Common", "Uncommon", "Rare"] },
+        { "count": 1, "hit": true }
+      ],
+      "hitWeights": {
+        "Rare": 0.6,
+        "Rare Holo": 0.25,
+        "Rare Ultra": 0.11,
+        "Rare Secret": 0.04
+      }
+    },
+
+    "XY": {
+      "label": "XY (2013-2016)",
+      "packSize": 10,
+      "msrp": { "pack": 3.99, "box": 143.64, "boxPacks": 36, "etb": 39.99, "etbPacks": 8 },
+      "slots": [
+        { "count": 5, "pool": ["Common"] },
+        { "count": 3, "pool": ["Uncommon"] },
+        { "count": 1, "reverse": true, "pool": ["Common", "Uncommon", "Rare"] },
+        { "count": 1, "hit": true }
+      ],
+      "hitWeights": {
+        "Rare": 0.55,
+        "Rare Holo": 0.24,
+        "Rare Holo EX": 0.09,
+        "Rare BREAK": 0.05,
+        "Rare Ultra": 0.05,
+        "Rare Secret": 0.015,
+        "Rare Rainbow": 0.005
+      }
+    },
+
+    "Sun & Moon": {
+      "label": "Sun & Moon (2017-2019)",
+      "packSize": 10,
+      "msrp": { "pack": 4.29, "box": 154.44, "boxPacks": 36, "etb": 44.99, "etbPacks": 8 },
+      "slots": [
+        { "count": 4, "pool": ["Common"] },
+        { "count": 3, "pool": ["Uncommon"] },
+        { "count": 1, "reverse": true, "pool": ["Common", "Uncommon", "Rare", "Rare Holo"] },
+        { "count": 1, "energy": true, "pool": ["Common"] },
+        { "count": 1, "hit": true }
+      ],
+      "hitWeights": {
+        "Rare": 0.55,
+        "Rare Holo": 0.2,
+        "Rare Holo GX": 0.115,
+        "Rare Ultra": 0.075,
+        "Rare Rainbow": 0.035,
+        "Rare Secret": 0.02,
+        "Rare Shiny": 0.004,
+        "Rare Shiny GX": 0.001
+      }
+    },
+
+    "Sword & Shield": {
+      "label": "Sword & Shield (2019-2023)",
+      "packSize": 10,
+      "msrp": { "pack": 4.49, "box": 161.64, "boxPacks": 36, "etb": 49.99, "etbPacks": 8 },
+      "slots": [
+        { "count": 4, "pool": ["Common"] },
+        { "count": 3, "pool": ["Uncommon"] },
+        { "count": 1, "reverse": true, "pool": ["Common", "Uncommon", "Rare", "Rare Holo"] },
+        { "count": 1, "energy": true, "pool": ["Common"] },
+        { "count": 1, "hit": true }
+      ],
+      "hitWeights": {
+        "Rare": 0.46,
+        "Rare Holo": 0.18,
+        "Rare Holo V": 0.17,
+        "Rare Holo VMAX": 0.045,
+        "Rare Holo VSTAR": 0.035,
+        "Rare Ultra": 0.04,
+        "Trainer Gallery Rare Holo": 0.035,
+        "Amazing Rare": 0.015,
+        "Radiant Rare": 0.012,
+        "Rare Rainbow": 0.01,
+        "Rare Secret": 0.007,
+        "Rare Shiny": 0.005,
+        "Shiny Rare": 0.004,
+        "Shiny Ultra Rare": 0.002
+      }
+    },
+
+    "Scarlet & Violet": {
+      "label": "Scarlet & Violet (2023-2025)",
+      "packSize": 10,
+      "msrp": { "pack": 4.49, "box": 161.64, "boxPacks": 36, "etb": 49.99, "etbPacks": 9 },
+      "slots": [
+        { "count": 4, "pool": ["Common"] },
+        { "count": 3, "pool": ["Uncommon"] },
+        { "count": 1, "reverse": true, "pool": ["Common", "Uncommon", "Rare", "Rare Holo"] },
+        { "count": 1, "energy": true, "pool": ["Common"] },
+        { "count": 1, "hit": true }
+      ],
+      "hitWeights": {
+        "Rare": 0.52,
+        "Rare Holo": 0.09,
+        "Double Rare": 0.14,
+        "Illustration Rare": 0.084,
+        "Ultra Rare": 0.077,
+        "ACE SPEC Rare": 0.04,
+        "Special Illustration Rare": 0.020,
+        "Hyper Rare": 0.0092,
+        "Shiny Rare": 0.02,
+        "Shiny Ultra Rare": 0.004,
+        "Black White Rare": 0.0012,
+        "Classic Collection": 0.001
+      }
+    },
+
+    "Mega Evolution": {
+      "label": "Mega Evolution (2025-2026)",
+      "packSize": 10,
+      "msrp": { "pack": 4.99, "box": 179.64, "boxPacks": 36, "etb": 54.99, "etbPacks": 9 },
+      "slots": [
+        { "count": 4, "pool": ["Common"] },
+        { "count": 3, "pool": ["Uncommon"] },
+        { "count": 1, "reverse": true, "pool": ["Common", "Uncommon", "Rare", "Rare Holo"] },
+        { "count": 1, "energy": true, "pool": ["Common"] },
+        { "count": 1, "hit": true }
+      ],
+      "hitWeights": {
+        "Rare": 0.5,
+        "Rare Holo": 0.09,
+        "Double Rare": 0.14,
+        "Illustration Rare": 0.084,
+        "Ultra Rare": 0.077,
+        "ACE SPEC Rare": 0.035,
+        "Special Illustration Rare": 0.020,
+        "Mega Hyper Rare": 0.0092,
+        "Hyper Rare": 0.0046
+      }
+    }
+  },
+
+  "fallbackEra": "Scarlet & Violet",
+
+  "products": {
+    "pack": { "label": "Single Pack", "packs": 1 },
+    "etb": { "label": "Elite Trainer Box", "packs": "etbPacks" },
+    "box": { "label": "Booster Box", "packs": "boxPacks" }
+  },
+
+  "_msrpNote": [
+    "Costs are original-release MSRP for that era, so vintage rips are priced at 1999",
+    "money rather than today's sealed market (a real Base Set box trades five figures).",
+    "The EV readout labels this explicitly."
+  ]
+}

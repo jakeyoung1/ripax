@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ripax — Pokémon pack opening simulator</title>
+<meta name="description" content="Rip any Pokémon TCG booster pack, Elite Trainer Box or booster box ever printed. Real cards, real market prices, no money.">
+<link rel="stylesheet" href="src/styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <button class="brand" data-nav="sets" type="button">
+    <span class="brand-mark"></span>
+    <span class="brand-text">Ripax</span>
+  </button>
+  <nav class="topnav">
+    <button data-nav="sets" type="button">Sets</button>
+    <button data-nav="collection" type="button">Collection <span class="chip" id="nav-collection-count">0</span></button>
+    <span id="auth-slot"></span>
+  </nav>
+</header>
+
+<main id="main">
+
+  <!-- ── set picker ─────────────────────────────────────────────── -->
+  <section class="view" id="view-sets">
+    <div class="hero">
+      <h1>Rip any pack ever printed.</h1>
+      <p>
+        Every English Pokémon TCG set from Base 1999 to now, with live market
+        prices. Find out what a box would have cost you — and what you'd have
+        pulled. No real money, ever. Sign in only if you want your collection
+        saved beyond this browser.
+      </p>
+    </div>
+
+    <div class="toolbar">
+      <input id="set-search" type="search" placeholder="Search sets — 151, Evolving Skies, Base…" autocomplete="off">
+      <select id="era-filter"><option value="">All eras</option></select>
+      <span class="toolbar-count" id="set-count"></span>
+    </div>
+
+    <div id="set-groups" class="set-groups">
+      <p class="loading">Loading sets…</p>
+    </div>
+  </section>
+
+  <!-- ── product picker ─────────────────────────────────────────── -->
+  <section class="view" id="view-product" hidden>
+    <button class="back" data-nav="sets" type="button">← All sets</button>
+    <div id="product-head" class="product-head"></div>
+    <div id="product-list" class="product-list"></div>
+    <p class="fineprint" id="product-fineprint"></p>
+  </section>
+
+  <!-- ── reveal stage ───────────────────────────────────────────── -->
+  <section class="view" id="view-rip" hidden>
+    <div id="rip-stage"></div>
+  </section>
+
+  <!-- ── results ────────────────────────────────────────────────── -->
+  <section class="view" id="view-results" hidden>
+    <div id="results-body"></div>
+  </section>
+
+  <!-- ── collection ─────────────────────────────────────────────── -->
+  <section class="view" id="view-collection" hidden>
+    <div id="collection-body"></div>
+  </section>
+
+</main>
+
+<div id="modal-host"></div>
+<div id="fx-host"></div>
+
+<footer class="foot">
+  <p>
+    Card data and prices from
+    <a href="https://pokemontcg.io" target="_blank" rel="noopener">pokemontcg.io</a>
+    and <a href="https://tcgdex.net" target="_blank" rel="noopener">TCGdex</a>.
+    Pull rates are community approximations — The Pokémon Company has never
+    published real odds. Costs are original-release MSRP.
+  </p>
+  <p class="disclaim">
+    Fan project, not affiliated with Nintendo, Creatures, GAME FREAK or The
+    Pokémon Company. Nothing here is for sale and no real money is involved.
+  </p>
+</footer>
+
+<input type="file" id="import-file" accept="application/json,.json" hidden>
+<div class="toast" id="toast" hidden></div>
+
+<script type="module" src="src/app.js"></script>
+</body>
+</html>
