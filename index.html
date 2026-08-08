@@ -3,94 +3,133 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ripax — Pokémon pack opening simulator</title>
-<meta name="description" content="Rip any Pokémon TCG booster pack, Elite Trainer Box or booster box ever printed. Real cards, real market prices, no money.">
-<link rel="stylesheet" href="src/styles.css">
+<title>Ripax has moved</title>
+<meta name="robots" content="noindex">
+<!--
+  Bridge page for the old GitHub Pages origin.
+
+  Ripax now lives on the Cloudflare Worker, which is the only origin with a
+  backend and therefore the only one where signing in can work. Keeping a
+  playable copy here was actively harmful: localStorage is per-origin, so a
+  collection built on github.io is invisible to the Worker and can never be
+  signed in — the same way the old Fly collection became unreachable.
+
+  So this page consolidates, but never at the cost of data. If there is a
+  collection saved on this origin it is offered as a download first, in the
+  exact format the Worker's importer accepts. With nothing to save, this
+  redirects immediately and the visitor sees none of it.
+-->
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 28px;
+    background: radial-gradient(ellipse at 50% -10%, #1b2140 0%, #0a0b10 62%);
+    color: #eef0f6;
+    font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  }
+  main { max-width: 34rem; text-align: center; }
+  .mark {
+    width: 54px; height: 54px; margin: 0 auto 18px; border-radius: 14px;
+    background: conic-gradient(from 210deg, #ff5ea8, #ffcb3d, #63b3ff, #9d7bff, #ff5ea8);
+    box-shadow: 0 10px 30px -8px rgba(157, 123, 255, .7);
+  }
+  h1 { font-size: 25px; margin: 0 0 10px; letter-spacing: -.01em; }
+  p { color: #939ab2; margin: 0 0 18px; }
+  .count { color: #ffcb3d; font-weight: 600; }
+  .row { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 22px; }
+  a.btn, button.btn {
+    font: inherit; font-weight: 600; cursor: pointer; text-decoration: none;
+    padding: 12px 20px; border-radius: 11px; border: 1px solid transparent;
+    background: #ffcb3d; color: #17130a; transition: transform .14s ease, filter .14s ease;
+  }
+  a.btn:hover, button.btn:hover { transform: translateY(-2px); filter: brightness(1.06); }
+  .btn.sec { background: transparent; border-color: #333a52; color: #eef0f6; }
+  .note { font-size: 13.5px; color: #6f768e; margin-top: 24px; }
+  .saved { color: #7ddfa0; }
+  code { background: #191d2c; padding: 2px 6px; border-radius: 5px; font-size: 13px; }
+</style>
 </head>
 <body>
-
-<header class="topbar">
-  <button class="brand" data-nav="sets" type="button">
-    <span class="brand-mark"></span>
-    <span class="brand-text">Ripax</span>
-  </button>
-  <nav class="topnav">
-    <button data-nav="sets" type="button">Sets</button>
-    <button data-nav="collection" type="button">Collection <span class="chip" id="nav-collection-count">0</span></button>
-    <span id="auth-slot"></span>
-  </nav>
-</header>
-
-<main id="main">
-
-  <!-- ── set picker ─────────────────────────────────────────────── -->
-  <section class="view" id="view-sets">
-    <div class="hero">
-      <h1>Rip any pack ever printed.</h1>
-      <p>
-        Every English Pokémon TCG set from Base 1999 to now, with live market
-        prices. Find out what a box would have cost you — and what you'd have
-        pulled. No real money, ever. Sign in only if you want your collection
-        saved beyond this browser.
-      </p>
-    </div>
-
-    <div class="toolbar">
-      <input id="set-search" type="search" placeholder="Search sets — 151, Evolving Skies, Base…" autocomplete="off">
-      <select id="era-filter"><option value="">All eras</option></select>
-      <span class="toolbar-count" id="set-count"></span>
-    </div>
-
-    <div id="set-groups" class="set-groups">
-      <p class="loading">Loading sets…</p>
-    </div>
-  </section>
-
-  <!-- ── product picker ─────────────────────────────────────────── -->
-  <section class="view" id="view-product" hidden>
-    <button class="back" data-nav="sets" type="button">← All sets</button>
-    <div id="product-head" class="product-head"></div>
-    <div id="product-list" class="product-list"></div>
-    <p class="fineprint" id="product-fineprint"></p>
-  </section>
-
-  <!-- ── reveal stage ───────────────────────────────────────────── -->
-  <section class="view" id="view-rip" hidden>
-    <div id="rip-stage"></div>
-  </section>
-
-  <!-- ── results ────────────────────────────────────────────────── -->
-  <section class="view" id="view-results" hidden>
-    <div id="results-body"></div>
-  </section>
-
-  <!-- ── collection ─────────────────────────────────────────────── -->
-  <section class="view" id="view-collection" hidden>
-    <div id="collection-body"></div>
-  </section>
-
+<main>
+  <div class="mark" aria-hidden="true"></div>
+  <h1 id="head">Ripax has moved</h1>
+  <p id="body">Taking you there&hellip;</p>
+  <div class="row" id="actions" hidden>
+    <button class="btn" id="save" type="button">Download my collection</button>
+    <a class="btn sec" id="go" href="https://ripax.ripax.workers.dev/">Continue to Ripax &rarr;</a>
+  </div>
+  <p class="note" id="note" hidden>
+    On the new site open <strong>Collection</strong> and choose <strong>Import</strong>
+    to load the file back in. Signing in there keeps it on your account instead of
+    one browser.
+  </p>
 </main>
+<script>
+(function () {
+  var HOME = 'https://ripax.ripax.workers.dev/';
+  var KEY = 'packrip.binder.v1';
 
-<div id="modal-host"></div>
-<div id="fx-host"></div>
+  function read() {
+    try {
+      var raw = localStorage.getItem(KEY);
+      if (!raw) return null;
+      var parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== 'object' || !parsed.cards) return null;
+      var keys = Object.keys(parsed.cards);
+      if (!keys.length) return null;
+      var total = 0;
+      for (var i = 0; i < keys.length; i++) {
+        var row = parsed.cards[keys[i]];
+        var n = typeof row === 'object' && row ? Number(row.c) : Number(row);
+        total += Number.isFinite(n) && n > 0 ? n : 0;
+      }
+      return { binder: parsed, unique: keys.length, total: total };
+    } catch (err) {
+      return null; // unreadable or blocked storage is the same as none
+    }
+  }
 
-<footer class="foot">
-  <p>
-    Card data and prices from
-    <a href="https://pokemontcg.io" target="_blank" rel="noopener">pokemontcg.io</a>
-    and <a href="https://tcgdex.net" target="_blank" rel="noopener">TCGdex</a>.
-    Pull rates are community approximations — The Pokémon Company has never
-    published real odds. Costs are original-release MSRP.
-  </p>
-  <p class="disclaim">
-    Fan project, not affiliated with Nintendo, Creatures, GAME FREAK or The
-    Pokémon Company. Nothing here is for sale and no real money is involved.
-  </p>
-</footer>
+  var found = read();
 
-<input type="file" id="import-file" accept="application/json,.json" hidden>
-<div class="toast" id="toast" hidden></div>
+  // Nothing worth keeping here: forward without showing an interstitial, and
+  // use replace() so Back does not bounce the visitor straight back in.
+  if (!found) { location.replace(HOME); return; }
 
-<script type="module" src="src/app.js"></script>
+  document.getElementById('head').textContent = 'Ripax has a new home';
+  document.getElementById('body').innerHTML =
+    'This page is retired. Your collection here — <span class="count">' +
+    found.total.toLocaleString() + ' card' + (found.total === 1 ? '' : 's') +
+    '</span> across ' + found.unique.toLocaleString() + ' printing' +
+    (found.unique === 1 ? '' : 's') + ' — is saved in this browser only, so ' +
+    'download it before you go and import it on the new site.';
+  document.getElementById('actions').hidden = false;
+  document.getElementById('note').hidden = false;
+  document.getElementById('go').href = HOME;
+
+  document.getElementById('save').addEventListener('click', function () {
+    // Same envelope the app's own exporter writes, so the new site's importer
+    // accepts this file with no special-casing.
+    var payload = Object.assign(
+      { kind: 'packrip-binder', exportedAt: new Date().toISOString() },
+      found.binder
+    );
+    var url = URL.createObjectURL(
+      new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
+    );
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'ripax-collection.json';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+
+    var button = document.getElementById('save');
+    button.textContent = 'Saved ✓';
+    button.classList.add('saved');
+  });
+})();
+</script>
 </body>
 </html>
