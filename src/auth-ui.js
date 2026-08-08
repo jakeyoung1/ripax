@@ -78,7 +78,7 @@ export function renderSignInModal(providers, returnTo) {
          </div>
          <p class="dev-note">
            Creates a local-only account so the collection sync can be tested
-           before Google and Apple credentials are set up. Never enabled in production.
+           before Google credentials are set up. Never enabled in production.
          </p>
        </div>`
     : '';
