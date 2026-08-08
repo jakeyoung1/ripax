@@ -13,6 +13,7 @@ import { attr, cardImage, esc, glowFor, money } from './views.js';
 import {
   isMuted,
   playBoxOpen,
+  playCrinkle,
   playHit,
   playLand,
   playPackPull,
@@ -24,6 +25,7 @@ import {
   beginTell,
   clearTell,
   gradeFor,
+  isWalkoutOpen,
   onWalkoutClose,
   payoff,
 } from './reveal-fx.js';
@@ -228,7 +230,7 @@ function renderSealed() {
         <div class="pack-curl" id="pack-curl"><span class="curl-lip"></span></div>
         <div class="tear-guide" id="tear-guide"><span class="tear-hot"></span></div>
       </div>
-      <p class="rip-hint" id="rip-hint">Swipe across the line to tear it open</p>
+      <p class="rip-hint" id="rip-hint">Drag all the way across the tear line &mdash; or flick it</p>
     </div>`;
 
   wireCommon();
@@ -539,22 +541,88 @@ function wireCommon() {
   if (bail) bail.addEventListener('click', () => session.onSkip());
 }
 
-/** Tear: drag horizontally across the pack, or just tap it. */
+/**
+ * Tear the wrapper open by dragging across it.
+ *
+ * This is deliberately a gesture rather than a click. Tapping used to open the
+ * pack instantly, which made the wrapper feel like a button standing between
+ * you and the cards — pulling the foil apart yourself is the part worth having.
+ * The drag drives the strip, the corner curl and the guide from one number, so
+ * the wrapper answers the hand continuously instead of snapping between states.
+ *
+ * Two ways to commit, because a slow deliberate pull and a fast flick are both
+ * real gestures: cross the whole span, or get past a third of it fast enough
+ * that you were plainly going all the way.
+ */
 function wireTear() {
   const pack = document.getElementById('pack');
   const strip = document.getElementById('pack-strip');
-  if (!pack) return;
+  if (!pack || !strip) return;
 
-  let startX = null;
+  const curl = document.getElementById('pack-curl');
+  const guide = document.getElementById('tear-guide');
+  const hint = document.getElementById('rip-hint');
+
+  // A committed flick, not merely a brisk drag. 0.5px/ms was about the speed of
+  // an ordinary deliberate pull (200px over 400ms), so half-hearted drags were
+  // completing the tear on release; a real flick runs several times that.
+  const FLICK_SPEED = 1.5; // px per ms
+  const FLICK_MIN = 0.45; // …and at least this far along
+  // Velocity is only meaningful if the pointer was still moving recently. Hold
+  // still at the halfway mark and let go and that is not a flick, however fast
+  // you got there — without this the last sample before the pause stands
+  // forever and the pack tears on release.
+  const FLICK_STALE_MS = 90;
+
+  let pointerId = null;
+  let startX = 0;
+  let lastX = 0;
+  let lastTime = 0;
+  let velocity = 0;
+  let progress = 0;
+  let crinkledAt = 0;
   let torn = false;
+
+  /*
+   * How far the hand must travel, fixed once per gesture.
+   *
+   * Two things matter here. It is a fraction of the pack's width so the pull
+   * covers the same part of the wrapper on a phone and on a desktop, rather
+   * than a pixel count that feels long on one and twitchy on the other. And it
+   * is `offsetWidth`, sampled at pointerdown — NOT getBoundingClientRect during
+   * the drag. The grip state scales the pack up as you pull, and a bounding box
+   * reports the scaled size, so a live measurement grows the target as you
+   * approach it: progress crept to 0.98 and stalled, and the tear never
+   * completed no matter how far you dragged.
+   */
+  let spanPx = 158;
+  const measure = () => { spanPx = Math.max(80, (pack.offsetWidth || 240) * 0.66); };
+
+  const paint = (value) => {
+    progress = value;
+    const css = value.toFixed(4);
+    strip.style.setProperty('--tear', css);
+    curl?.style.setProperty('--tear', css);
+    pack.style.setProperty('--pull', css);
+    if (guide) {
+      guide.style.setProperty('--tear', css);
+      guide.classList.toggle('active', value > 0.015);
+    }
+  };
+
+  const buzz = (pattern) => {
+    try { navigator.vibrate?.(pattern); } catch { /* not supported, no matter */ }
+  };
 
   const tear = () => {
     if (torn) return;
     torn = true;
-    // Tapping skips the drag, so snap the curl open before the fly-off.
-    document.getElementById('pack-curl')?.style.setProperty('--tear', '1');
+    pack.classList.remove('springing', 'gripping');
+    paint(1);
     playTear();
+    buzz([12, 28, 20]);
     pack.classList.add('torn');
+    if (hint) hint.textContent = '';
     // Let the wrapper animation play before the cards appear.
     setTimeout(() => {
       if (!session) return;
@@ -563,43 +631,71 @@ function wireTear() {
     }, 620);
   };
 
-  const move = (event) => {
-    if (startX === null || torn) return;
-    const dx = event.clientX - startX;
-    const progress = Math.max(0, Math.min(1, dx / 140));
-    strip.style.setProperty('--tear', String(progress));
-    document.getElementById('pack-curl')?.style.setProperty('--tear', String(progress));
-    const guide = document.getElementById('tear-guide');
-    if (guide) {
-      guide.style.setProperty('--tear', String(progress));
-      guide.classList.add('active');
-    }
-    if (progress >= 1) tear();
-  };
+  const release = () => {
+    if (torn || pointerId === null) return;
+    pointerId = null;
+    pack.classList.remove('gripping');
 
-  const up = () => {
-    if (startX !== null && !torn) {
-      strip.style.setProperty('--tear', '0');
-      document.getElementById('pack-curl')?.style.setProperty('--tear', '0');
-      const guide = document.getElementById('tear-guide');
-      if (guide) {
-        guide.style.setProperty('--tear', '0');
-        guide.classList.remove('active');
-      }
+    const stalled = performance.now() - lastTime > FLICK_STALE_MS;
+    const flicked = !stalled && velocity > FLICK_SPEED && progress > FLICK_MIN;
+    if (progress >= 1 || flicked) {
+      tear();
+      return;
     }
-    startX = null;
+
+    // Foil springs shut rather than blinking back to zero, so letting go reads
+    // as the wrapper resisting instead of the interface resetting.
+    pack.classList.add('springing');
+    paint(0);
+    crinkledAt = 0;
+    setTimeout(() => pack?.classList.remove('springing'), 320);
   };
 
   pack.addEventListener('pointerdown', (event) => {
+    if (torn || pointerId !== null) return;
+    pointerId = event.pointerId;
     startX = event.clientX;
+    lastX = event.clientX;
+    lastTime = event.timeStamp;
+    velocity = 0;
+    crinkledAt = 0;
+    // Sampled before .gripping applies its scale, so the target cannot move.
+    measure();
+    pack.classList.add('gripping');
+    pack.classList.remove('springing');
     pack.setPointerCapture?.(event.pointerId);
   });
-  pack.addEventListener('pointermove', move);
-  pack.addEventListener('pointerup', up);
-  pack.addEventListener('pointercancel', up);
 
-  // Tapping (no drag) should also work — dragging is flavour, not a gate.
-  pack.addEventListener('click', tear);
+  pack.addEventListener('pointermove', (event) => {
+    if (torn || event.pointerId !== pointerId) return;
+
+    const elapsed = event.timeStamp - lastTime;
+    if (elapsed > 0) {
+      // Smoothed, so one jittery sample between frames cannot read as a flick.
+      velocity = velocity * 0.7 + (Math.abs(event.clientX - lastX) / elapsed) * 0.3;
+      lastX = event.clientX;
+      lastTime = event.timeStamp;
+    }
+
+    const next = Math.max(0, Math.min(1, (event.clientX - startX) / spanPx));
+
+    // A crackle every few percent of travel keeps the sound tied to the hand;
+    // a single sample at the end would just be a sound effect.
+    if (next > crinkledAt + 0.07) {
+      crinkledAt = next;
+      playCrinkle(next);
+      if (next > 0.25) buzz(5);
+    }
+
+    paint(next);
+    if (next >= 1) release();
+  });
+
+  pack.addEventListener('pointerup', release);
+  pack.addEventListener('pointercancel', release);
+  pack.addEventListener('lostpointercapture', release);
+
+  // The drag is the intended way in, but it must not be the only way in.
   pack.addEventListener('keydown', (event) => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
@@ -651,16 +747,29 @@ function attachCard(card, pull) {
     setFlip(1);
 
     playSlide();
-    if (pull.tier >= 3) {
-      setTimeout(() => playHit(Math.min(1, (pull.tier - 2) / 7)), 80);
-      const outcome = payoff(scene(), pull, {
-        setId: session.set.id,
-        priced: session.result.pricesAvailable,
-      });
-      if (outcome.walkout) session.awaitingWalkout = true;
-    } else {
-      clearTell(scene());
-      setTimeout(playLand, 120);
+    /*
+     * The celebration is wrapped because everything after it is what actually
+     * keeps the pack playable: the running total, the card's metadata, and the
+     * tilt handler that lets it be dismissed. A throw anywhere in the effects —
+     * a missing scene node, a WebAudio failure, a bad palette — would otherwise
+     * strand the card face-up with no way forward and force a page refresh.
+     * Losing a confetti burst is a far better outcome than losing the pack.
+     */
+    try {
+      if (pull.tier >= 3) {
+        setTimeout(() => playHit(Math.min(1, (pull.tier - 2) / 7)), 80);
+        // No flag is kept for the walkout: dismiss() reads the overlay directly,
+        // because a flag recorded here outlives the thing it describes.
+        payoff(scene(), pull, {
+          setId: session.set.id,
+          priced: session.result.pricesAvailable,
+        });
+      } else {
+        clearTell(scene());
+        setTimeout(playLand, 120);
+      }
+    } catch (err) {
+      console.error('reveal effects failed, continuing without them:', err);
     }
 
     session.runningValue += pull.price;
@@ -696,10 +805,20 @@ function attachCard(card, pull) {
       updateChevrons();
     };
 
-    if (session.awaitingWalkout) {
+    /*
+     * Whether to wait is decided from the live overlay, not from a flag set back
+     * in reveal(). The walkout is a full-screen takeover with pointer-events on,
+     * so the card beneath it cannot be tapped — which means by the time dismiss()
+     * runs, the user has already closed the walkout and it is gone.
+     *
+     * The old code tested a flag set at reveal() time, so it always took the
+     * waiting branch and registered its callback AFTER the close it was waiting
+     * for had already fired. Nothing advanced, the card never left the hand, and
+     * the pack was stuck — every single time an elite pull came up.
+     */
+    if (isWalkoutOpen()) {
       onWalkoutClose(() => {
         if (!session) return;
-        session.awaitingWalkout = false;
         advance();
       });
     } else {

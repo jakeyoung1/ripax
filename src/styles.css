@@ -409,6 +409,46 @@ main { padding: clamp(18px, 4vw, 44px) clamp(14px, 4vw, 40px) 80px; max-width: 1
 .pack:hover { transform: translateY(-4px) rotate(-1deg); }
 
 /*
+ * Registering the drag variables as real numbers is what lets the wrapper
+ * spring shut. An unregistered custom property is just a token, so it jumps
+ * between values and cannot be transitioned — everything downstream of --tear
+ * (the strip lift, the corner curl, the guide) would snap back rather than
+ * recoil when you let go mid-pull.
+ */
+@property --tear {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0;
+}
+@property --pull {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+
+/* Hand on the wrapper: it leans into the pull and lifts off the table. Driven
+   by --pull so the lean tracks the drag instead of being a fixed pose. Must
+   come after :hover — same specificity, so source order decides. */
+.pack.gripping {
+  transition: none;
+  transform:
+    translateY(calc(-5px - var(--pull, 0) * 5px))
+    rotate(calc(-1deg - var(--pull, 0) * 1.8deg))
+    scale(calc(1 + var(--pull, 0) * .018));
+}
+
+/* Let go before committing and the foil recoils shut. The overshoot in the
+   easing is the point: it reads as tension in the wrapper rather than as the
+   interface resetting a value. */
+.pack.springing { transition: transform .32s cubic-bezier(.34, 1.4, .64, 1); }
+.pack.springing .pack-strip,
+.pack.springing .pack-curl,
+.pack.springing .tear-guide,
+.pack.springing .tear-hot {
+  transition: --tear .32s cubic-bezier(.34, 1.4, .64, 1);
+}
+
+/*
  * Wrapper foil. Colours come from --p1/--p2/--p3/--pa, set per-era in rip.js,
  * so a 1999 Base pack doesn't look like a 2026 Mega Evolution one. Layers, from
  * back to front: metallic diagonal sweep, vertical print gradient, then a fine
@@ -486,35 +526,99 @@ main { padding: clamp(18px, 4vw, 44px) clamp(14px, 4vw, 40px) 80px; max-width: 1
 }
 
 /* Even edge-to-edge rarities carry attack text and a rules box over the art, so
-   both kinds get cropped to the upper illustration and pushed back with a slight
-   blur. The wrapper should read as artwork, not as a legible card. */
+   both kinds get cropped to the upper illustration. What keeps that from reading
+   as a card is the crop and the scrim behind the logo — not blur.
+
+   The blur used to be 1.4px, which was doing real damage: the hires source is
+   600px wide and the crop displays it at roughly life size, so the artwork is
+   genuinely sharp and the filter was throwing that away. A third of a pixel is
+   enough to take the edge off PNG compression without softening the painting.
+   Saturation and contrast come up to match printed foil, which is far punchier
+   than a screenshot of a card. */
 .pack-hero {
-  filter: blur(1.4px) saturate(1.15) contrast(1.05);
+  filter: saturate(1.55) contrast(1.16) brightness(1.04);
+  /* The real guarantee that no card text reaches the wrapper. Blur only made
+     the words fuzzy — at 0.3px "Brave Wing" and a rules line were still plainly
+     readable along the bottom. Dissolving the lower fifth removes them outright
+     and reads as artwork fading into foil, which is what a printed wrapper
+     actually does. Belt and braces with the crops below, since every set picks
+     a different hero card and no single crop suits all 174. */
+  -webkit-mask-image: linear-gradient(180deg,
+    transparent 0%, rgba(0, 0, 0, .6) 5%, #000 13%,
+    #000 72%, rgba(0, 0, 0, .5) 88%, transparent 98%);
+  mask-image: linear-gradient(180deg,
+    transparent 0%, rgba(0, 0, 0, .6) 5%, #000 13%,
+    #000 72%, rgba(0, 0, 0, .5) 88%, transparent 98%);
 }
 
+/*
+ * Crops chosen by arithmetic rather than by eye, because a card has text at
+ * BOTH ends — name and evolution line at the top, attacks and rules at the
+ * bottom — and nudging the pivot up to escape one just pulls in the other.
+ *
+ * Scaling by S about origin Y maps container position p to image position
+ * Y + (p - Y)/S, so the visible band runs Y - Y/S to Y + (1 - Y)/S. Solving
+ * for the illustration in each layout:
+ *   full-bleed art occupies roughly 18–68% of the card -> S 2.0, Y 36%
+ *   a framed card's art window is roughly 15–52%       -> S 2.7, Y 24%
+ */
 .pack-hero.bleed {
-  transform: scale(1.72);
-  transform-origin: 50% 20%;
+  transform: scale(2);
+  transform-origin: 50% 36%;
 }
 
 .pack-hero.framed {
-  transform: scale(2.35);
+  transform: scale(2.7);
   transform-origin: 50% 24%;
 }
 
-/* Tints the artwork toward the set's colours so the logo stays readable. */
+/* Tints the artwork toward the set's colours.
+ *
+ * This used to sit at 95%/52%/58%/97% opacity, which buried the illustration
+ * under flat colour — the single biggest reason the packs looked muted. The
+ * tint is now roughly a third of that, concentrated at the top and bottom where
+ * the crimps and the card count sit, and the middle is left almost clear so the
+ * artwork is actually visible. Readability of the logo is handled by a scrim
+ * sized to the logo (see .pack-art::before) rather than by dimming everything.
+ *
+ * `screen` on the first layer lifts the set's accent into the highlights
+ * instead of greying them, which is what gives foil its sheen. */
 .pack-wash {
   position: absolute;
   inset: 0;
   z-index: 2;
   pointer-events: none;
   background:
-    radial-gradient(ellipse at 50% 38%, transparent 0%, color-mix(in srgb, var(--p3) 55%, transparent) 78%),
+    radial-gradient(ellipse at 50% 30%,
+      color-mix(in srgb, var(--p2) 26%, transparent) 0%, transparent 62%),
     linear-gradient(180deg,
-      color-mix(in srgb, var(--p3) 95%, transparent) 0%,
-      color-mix(in srgb, var(--p1) 52%, transparent) 30%,
-      color-mix(in srgb, var(--p1) 58%, transparent) 58%,
-      color-mix(in srgb, var(--p3) 97%, transparent) 100%);
+      color-mix(in srgb, var(--p3) 88%, transparent) 0%,
+      color-mix(in srgb, var(--p3) 34%, transparent) 15%,
+      transparent 34%,
+      transparent 56%,
+      color-mix(in srgb, var(--p1) 26%, transparent) 74%,
+      color-mix(in srgb, var(--p3) 92%, transparent) 100%);
+}
+
+/* Local scrim behind the wordmark and set logo. Sized to the text so the rest
+   of the wrapper keeps its artwork — the old approach dimmed the whole pack to
+   protect two lines of type. */
+.pack-art::before {
+  content: "";
+  position: absolute;
+  left: -8%;
+  right: -8%;
+  top: 2%;
+  height: 128%;
+  z-index: -1;
+  pointer-events: none;
+  /* Tight to the type and neutral-dark rather than tinted: a wide tinted blob
+     was hazing the middle of the wrapper, which is precisely where the artwork
+     needs to be strongest. */
+  background: radial-gradient(ellipse at 50% 46%,
+    rgba(0, 0, 0, .62) 0%,
+    rgba(0, 0, 0, .34) 44%,
+    transparent 70%);
 }
 
 .pack-brand {
@@ -1007,6 +1111,33 @@ main { padding: clamp(18px, 4vw, 44px) clamp(14px, 4vw, 40px) 80px; max-width: 1
   border-radius: 10px;
   background: radial-gradient(ellipse, #fff 0%, rgba(255, 170, 245, .8) 45%, transparent 75%);
   opacity: calc(.35 + var(--tear) * .65);
+}
+
+/*
+ * Idle invitation. Now that tapping no longer opens the pack, the swipe has to
+ * advertise itself — a light running the length of the tear line shows both
+ * where to start and which way to go. It runs only while untouched: once a
+ * finger is down the hot point belongs to the drag, not to an animation.
+ */
+@keyframes tearbeckon {
+  0%   { left: 2%; opacity: 0; }
+  14%  { opacity: .95; }
+  74%  { opacity: .95; }
+  100% { left: 98%; opacity: 0; }
+}
+.tear-guide:not(.active) .tear-hot {
+  animation: tearbeckon 2.2s cubic-bezier(.45, 0, .55, 1) infinite;
+}
+.pack.torn .tear-hot,
+.pack.gripping .tear-hot { animation: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tear-guide:not(.active) .tear-hot { animation: none; }
+  .pack.springing,
+  .pack.springing .pack-strip,
+  .pack.springing .pack-curl,
+  .pack.springing .tear-guide,
+  .pack.springing .tear-hot { transition-duration: .01ms; }
 }
 
 .pack.torn .tear-guide { opacity: 0; transition: opacity .25s ease; }

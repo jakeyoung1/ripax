@@ -108,6 +108,28 @@ function tone(context, { freq, duration, peak, type = 'sine', delay = 0, glide =
   osc.stop(start + duration + 0.05);
 }
 
+/**
+ * One short crackle of foil giving way, fired repeatedly while the tear is
+ * being dragged. The single long `playTear` sweep is the sound of the wrapper
+ * coming off; this is the sound of it resisting on the way there, so the audio
+ * tracks the hand instead of arriving all at once at the end.
+ *
+ * Pitch and level rise with progress, and each crackle is jittered slightly —
+ * identical repeats read as a synthesiser, not as foil.
+ */
+export function playCrinkle(progress = 0) {
+  const context = audio();
+  if (!context) return;
+  const p = Math.max(0, Math.min(1, progress));
+  burst(context, {
+    duration: 0.07 + Math.random() * 0.05,
+    from: 1500 + p * 2700,
+    to: 850 + p * 1900,
+    peak: 0.025 + p * 0.045,
+    q: 1.5 + Math.random() * 1.2,
+  });
+}
+
 /** Foil wrapper tearing: a long, bright, crackling sweep. */
 export function playTear() {
   const context = audio();

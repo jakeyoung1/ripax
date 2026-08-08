@@ -175,7 +175,12 @@ function walkout(pull, { setId, priced, grade }) {
   const close = () => {
     host.removeEventListener('pointermove', onMove);
     host.innerHTML = '';
-    if (typeof walkout.onClose === 'function') walkout.onClose();
+    // One-shot. Taking the handler before calling it means a callback
+    // registered for THIS card can never fire again for a later one — a stale
+    // handler would advance the stack for a card that had already been dealt.
+    const done = walkout.onClose;
+    walkout.onClose = null;
+    if (typeof done === 'function') done();
   };
 
   document.getElementById('walkout-go')?.addEventListener('click', close);
@@ -188,4 +193,16 @@ function walkout(pull, { setId, priced, grade }) {
 /** rip.js sets this so it can resume once the walkout is dismissed. */
 export function onWalkoutClose(fn) {
   walkout.onClose = fn;
+}
+
+/**
+ * Is the full-screen walkout on screen right now?
+ *
+ * Callers need this because the walkout covers everything at pointer-events:
+ * auto, so the card underneath cannot be interacted with while it is up. Asking
+ * the DOM is reliable in a way that a flag set earlier in the reveal is not —
+ * the flag outlives the overlay.
+ */
+export function isWalkoutOpen() {
+  return !!document.getElementById('fx-host')?.querySelector('.walkout');
 }
